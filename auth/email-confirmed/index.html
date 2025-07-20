@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verified - MugGo</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #6B4E3D 0%, #4A3429 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 3rem 2rem;
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: steam 2s ease-in-out infinite;
+        }
+        .checkmark {
+            font-size: 3rem;
+            color: #10B981;
+            margin-bottom: 1rem;
+            animation: bounce 0.6s ease-out;
+        }
+        @keyframes bounce {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        @keyframes steam {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        .title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #10B981;
+        }
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        .button {
+            display: inline-block;
+            background: #10B981;
+            color: white;
+            padding: 16px 32px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 8px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .button:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+        }
+        .button.secondary {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+        .button.secondary:hover {
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 10px 20px rgba(255, 255, 255, 0.1);
+        }
+        .footer {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">☕</div>
+        <div class="checkmark">✓</div>
+        <div class="title">Email Verified!</div>
+        <div class="subtitle">
+            Welcome to MugGo! Your email has been successfully confirmed. 
+            Return to the app to complete your profile and start discovering amazing coffee shops.
+        </div>
+        
+        <a href="muggo://auth/email-confirmed" class="button" id="openApp">
+            Open MugGo App
+        </a>
+        
+        <br>
+        
+        <button onclick="window.close()" class="button secondary">
+            Close Window
+        </button>
+        
+        <div class="footer">
+            Can't open the app? Make sure MugGo is installed on your device.
+        </div>
+    </div>
+
+    <script>
+        // Auto-attempt to open the app after 2 seconds
+        setTimeout(() => {
+            if (window.location.protocol !== 'file:') {
+                document.getElementById('openApp').click();
+            }
+        }, 2000);
+        
+        // Fallback for browsers that don't support custom schemes
+        document.getElementById('openApp').addEventListener('click', function(e) {
+            setTimeout(() => {
+                // If still on the page after 3 seconds, show download option
+                if (document.visibilityState === 'visible') {
+                    if (confirm('MugGo app not found. Download from the App Store?')) {
+                        window.open('https://apps.apple.com/app/muggo', '_blank');
+                    }
+                }
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
