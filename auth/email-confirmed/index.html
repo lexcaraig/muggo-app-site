@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Verified - MugGo</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -42,6 +43,16 @@
             color: #10B981;
             margin-bottom: 1rem;
             animation: bounce 0.6s ease-out;
+        }
+        .loading {
+            font-size: 2rem;
+            color: #10B981;
+            margin-bottom: 1rem;
+            animation: pulse 1s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
         @keyframes bounce {
             0% { transform: scale(0); }
@@ -96,37 +107,71 @@
             font-size: 0.9rem;
             opacity: 0.7;
         }
+        .error {
+            color: #EF4444;
+        }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="logo">☕</div>
-        <div class="checkmark">✓</div>
-        <div class="title">Email Verified!</div>
-        <div class="subtitle">
-            Welcome to MugGo! Your email has been successfully confirmed. 
-            Return to the app to complete your profile and start discovering amazing coffee shops.
-        </div>
         
-        <div style="margin: 2rem 0;">
-            <a href="muggo://auth/email-confirmed" class="button" id="openApp" style="font-size: 1.2rem; padding: 20px 40px; display: inline-block; margin-bottom: 1rem;">
-                📱 Open MugGo App
-            </a>
-            
-            <div style="margin: 1rem 0; font-size: 0.9rem; opacity: 0.8;">
-                Tap the button above to return to the MugGo app
+        <!-- Loading State -->
+        <div id="loadingState">
+            <div class="loading">⏳</div>
+            <div class="title">Confirming Email...</div>
+            <div class="subtitle">
+                Please wait while we verify your email address.
+            </div>
+        </div>
+
+        <!-- Success State -->
+        <div id="successState" class="hidden">
+            <div class="checkmark">✓</div>
+            <div class="title">Email Verified!</div>
+            <div class="subtitle">
+                Welcome to MugGo! Your email has been successfully confirmed. 
+                Return to the app to complete your profile and start discovering amazing coffee shops.
             </div>
             
-            <div id="fallbackOptions" style="display: none; margin-top: 1.5rem;">
-                <p style="font-size: 0.9rem; margin-bottom: 1rem; opacity: 0.9;">
-                    Can't open the app? Try these options:
-                </p>
-                
-                <a href="https://apps.apple.com/app/muggo" class="button secondary" style="margin: 5px;">
-                    📲 Download from App Store
+            <div style="margin: 2rem 0;">
+                <a href="muggo://auth/email-confirmed" class="button" id="openApp" style="font-size: 1.2rem; padding: 20px 40px; display: inline-block; margin-bottom: 1rem;">
+                    📱 Open MugGo App
                 </a>
                 
-                <button onclick="window.close()" class="button secondary" style="margin: 5px;">
+                <div style="margin: 1rem 0; font-size: 0.9rem; opacity: 0.8;">
+                    Tap the button above to return to the MugGo app
+                </div>
+                
+                <div id="fallbackOptions" style="display: none; margin-top: 1.5rem;">
+                    <p style="font-size: 0.9rem; margin-bottom: 1rem; opacity: 0.9;">
+                        Can't open the app? Try these options:
+                    </p>
+                    
+                    <a href="https://apps.apple.com/app/muggo" class="button secondary" style="margin: 5px;">
+                        📲 Download from App Store
+                    </a>
+                    
+                    <button onclick="window.close()" class="button secondary" style="margin: 5px;">
+                        ✖️ Close Window
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="hidden">
+            <div class="checkmark error">✗</div>
+            <div class="title error">Verification Failed</div>
+            <div class="subtitle">
+                We couldn't verify your email. The link may have expired or been used already.
+            </div>
+            
+            <div style="margin: 2rem 0;">
+                <button onclick="window.close()" class="button secondary">
                     ✖️ Close Window
                 </button>
             </div>
@@ -140,65 +185,136 @@
     <script>
         console.log('Email confirmation page loaded');
         
-        // Show fallback options after 5 seconds if user is still on page
-        setTimeout(() => {
-            if (document.visibilityState === 'visible') {
-                console.log('Showing fallback options');
-                document.getElementById('fallbackOptions').style.display = 'block';
-            }
-        }, 5000);
+        // Supabase configuration
+        const supabaseUrl = 'https://kofyfxkpgszkxfeycpdx.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvZnlmeGtwZ3N6a3hmZXljcGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2Njk2NTgsImV4cCI6MjA2ODI0NTY1OH0.fF5kHF9wASscjr0hPRqHxlSFi89lzzyQPkeNrA_WfrU'
         
-        // Auto-attempt to open the app after 3 seconds
-        setTimeout(() => {
-            if (window.location.protocol !== 'file:') {
-                console.log('Auto-attempting to open app');
-                document.getElementById('openApp').click();
-            }
-        }, 3000);
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
         
-        // Handle app opening attempts
-        document.getElementById('openApp').addEventListener('click', function(e) {
-            console.log('Open app button clicked');
+        // Get token from URL parameters
+        const urlParams = new URLSearchParams(window.location.search)
+        const token = urlParams.get('token')
+        const type = urlParams.get('type') || 'signup'
+        
+        console.log('Token from URL:', token ? 'present' : 'missing')
+        console.log('Type:', type)
+        
+        async function verifyEmail() {
+            if (!token) {
+                console.error('No token found in URL')
+                showError('No verification token found in the URL.')
+                return
+            }
             
-            // For iOS Safari, we need to handle the deep link differently
-            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                console.log('iOS device detected');
+            try {
+                console.log('Calling Supabase verifyOtp...')
                 
-                // Try to open the app
-                window.location.href = 'muggo://auth/email-confirmed';
+                // Actually verify the email with Supabase
+                const { data, error } = await supabase.auth.verifyOtp({
+                    token_hash: token,
+                    type: type
+                })
                 
-                // Show fallback options after a delay
-                setTimeout(() => {
-                    if (document.visibilityState === 'visible') {
-                        console.log('App may not be installed, showing fallback');
-                        document.getElementById('fallbackOptions').style.display = 'block';
-                    }
-                }, 2000);
+                if (error) {
+                    console.error('Supabase verification error:', error)
+                    showError(error.message || 'Email verification failed')
+                    return
+                }
                 
-            } else {
-                // For other devices/browsers
-                console.log('Non-iOS device or browser');
-                setTimeout(() => {
-                    if (document.visibilityState === 'visible') {
-                        document.getElementById('fallbackOptions').style.display = 'block';
-                    }
-                }, 2000);
+                console.log('Email verification successful:', data)
+                showSuccess()
+                
+            } catch (err) {
+                console.error('Verification error:', err)
+                showError('An unexpected error occurred during verification')
             }
-        });
+        }
+        
+        function showSuccess() {
+            document.getElementById('loadingState').classList.add('hidden')
+            document.getElementById('errorState').classList.add('hidden')
+            document.getElementById('successState').classList.remove('hidden')
+            
+            // Set up app opening logic
+            setupAppOpening()
+        }
+        
+        function showError(message) {
+            document.getElementById('loadingState').classList.add('hidden')
+            document.getElementById('successState').classList.add('hidden')
+            document.getElementById('errorState').classList.remove('hidden')
+            
+            // Update error message if needed
+            const subtitle = document.querySelector('#errorState .subtitle')
+            if (message) {
+                subtitle.textContent = message
+            }
+        }
+        
+        function setupAppOpening() {
+            // Show fallback options after 5 seconds if user is still on page
+            setTimeout(() => {
+                if (document.visibilityState === 'visible') {
+                    console.log('Showing fallback options')
+                    document.getElementById('fallbackOptions').style.display = 'block'
+                }
+            }, 5000)
+            
+            // Auto-attempt to open the app after 3 seconds
+            setTimeout(() => {
+                if (window.location.protocol !== 'file:') {
+                    console.log('Auto-attempting to open app')
+                    document.getElementById('openApp').click()
+                }
+            }, 3000)
+            
+            // Handle app opening attempts
+            document.getElementById('openApp').addEventListener('click', function(e) {
+                console.log('Open app button clicked')
+                
+                // For iOS Safari, we need to handle the deep link differently
+                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                    console.log('iOS device detected')
+                    
+                    // Try to open the app
+                    window.location.href = 'muggo://auth/email-confirmed'
+                    
+                    // Show fallback options after a delay
+                    setTimeout(() => {
+                        if (document.visibilityState === 'visible') {
+                            console.log('App may not be installed, showing fallback')
+                            document.getElementById('fallbackOptions').style.display = 'block'
+                        }
+                    }, 2000)
+                    
+                } else {
+                    // For other devices/browsers
+                    console.log('Non-iOS device or browser')
+                    setTimeout(() => {
+                        if (document.visibilityState === 'visible') {
+                            document.getElementById('fallbackOptions').style.display = 'block'
+                        }
+                    }, 2000)
+                }
+            })
+        }
         
         // Handle page visibility changes (when user returns from app)
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'visible') {
-                console.log('Page became visible again');
+                console.log('Page became visible again')
             } else {
-                console.log('Page became hidden (likely app opened)');
+                console.log('Page became hidden (likely app opened)')
             }
-        });
+        })
         
         // Add some debug info
-        console.log('User agent:', navigator.userAgent);
-        console.log('URL:', window.location.href);
+        console.log('User agent:', navigator.userAgent)
+        console.log('URL:', window.location.href)
+        
+        // Start the verification process when page loads
+        verifyEmail()
     </script>
 </body>
 </html>
-<!-- Cache bust: Mon 21 Jul 2025 02:56:37 PST -->
+<!-- Cache bust: Updated with Supabase verification -->
