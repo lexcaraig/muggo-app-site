@@ -219,6 +219,26 @@
                 
                 if (error) {
                     console.error('Supabase verification error:', error)
+                    
+                    // Check if the error is due to token already being used
+                    if (error.message.includes('invalid') || error.message.includes('expired')) {
+                        console.log('Token may be already used, checking if user is already verified...')
+                        
+                        // Try to get current session to see if user exists and is verified
+                        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+                        
+                        if (sessionData?.session?.user) {
+                            console.log('User session found, email is already verified!')
+                            showSuccess()
+                            return
+                        }
+                        
+                        // If no session but token is invalid, likely already verified by another session
+                        console.log('No active session, but token is invalid - likely already verified')
+                        showAlreadyVerified()
+                        return
+                    }
+                    
                     showError(error.message || 'Email verification failed')
                     return
                 }
@@ -236,6 +256,23 @@
             document.getElementById('loadingState').classList.add('hidden')
             document.getElementById('errorState').classList.add('hidden')
             document.getElementById('successState').classList.remove('hidden')
+            
+            // Set up app opening logic
+            setupAppOpening()
+        }
+        
+        function showAlreadyVerified() {
+            // Show success state for already verified emails
+            document.getElementById('loadingState').classList.add('hidden')
+            document.getElementById('errorState').classList.add('hidden')
+            document.getElementById('successState').classList.remove('hidden')
+            
+            // Update the success message to indicate already verified
+            const title = document.querySelector('#successState .title')
+            const subtitle = document.querySelector('#successState .subtitle')
+            
+            if (title) title.textContent = 'Email Already Verified!'
+            if (subtitle) subtitle.innerHTML = 'Your email has already been confirmed. You can close this window and return to the MugGo app to continue.'
             
             // Set up app opening logic
             setupAppOpening()
