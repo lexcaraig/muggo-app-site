@@ -191,17 +191,17 @@
         
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
         
-        // Get token from URL parameters
+        // Get token_hash from URL parameters (Supabase uses token_hash for email verification)
         const urlParams = new URLSearchParams(window.location.search)
-        const token = urlParams.get('token')
+        const tokenHash = urlParams.get('token_hash')
         const type = urlParams.get('type') || 'signup'
         
-        console.log('Token from URL:', token ? 'present' : 'missing')
+        console.log('Token hash from URL:', tokenHash ? 'present' : 'missing')
         console.log('Type:', type)
         
         async function verifyEmail() {
-            if (!token) {
-                console.error('No token found in URL')
+            if (!tokenHash) {
+                console.error('No token_hash found in URL')
                 showError('No verification token found in the URL.')
                 return
             }
@@ -211,7 +211,7 @@
                 
                 // Actually verify the email with Supabase
                 const { data, error } = await supabase.auth.verifyOtp({
-                    token_hash: token,
+                    token_hash: tokenHash,
                     type: type
                 })
                 
